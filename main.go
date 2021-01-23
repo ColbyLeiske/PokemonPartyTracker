@@ -53,7 +53,7 @@ func main() {
 	for p := 0; p < 6; p++ {
 		byteData := make([]byte, 100)
 		for i := 0; i < 100; i++ {
-			slot := startingSlot + uint(i*0x01) + uint(100 * p) 
+			slot := startingSlot + uint(i*0x01) + uint(100*p)
 
 			data, err := dm.Read(slot, goxymemmory.BYTE)
 			if err != nil { //Check if not failed.
@@ -65,6 +65,13 @@ func main() {
 		partySlots[p] = model.CreatePokemonBytes(byteData)
 	}
 
-	fmt.Println(partySlots[2].GetNickname())
+	for _, v := range partySlots {
+		name := v.GetNickname()
+		if name == "MISSING" {
+			continue
+		}
+		fmt.Println(name)
+	}
 
+	
 }
