@@ -70,18 +70,23 @@ func getNickname(nickIntOne uint64, nickIntTwo uint16) string {
 //https://bulbapedia.bulbagarden.net/wiki/Pok%C3%A9mon_data_substructures_in_Generation_III
 func decryptData(encryptedData []byte, decryptionKey uint32, personalityValue uint32, checksum uint16) (decryptedData DecryptedData, err error) {
 	//determine order of substructures
-	order := Orders[personalityValue%24]
-	fmt.Printf("suspected order is %v\n", order)
-	var runningChecksumTotal uint16
+	// order := Orders[personalityValue%24]
+
+	var runningChecksumTotal uint32
 	for i := 0; i < 48; i += 4 {
 		// encrytpedSubStructure := encryptedData[i*12 : (i+1)*12]
 		encrytpedSubStructure := binary.LittleEndian.Uint32(encryptedData[i:(i + 4)])
 		decryptedSubStructure := encrytpedSubStructure ^ decryptionKey
 
-		runningChecksumTotal += uint16(decryptedSubStructure)
+		runningChecksumTotal += decryptedSubStructure
 	}
-	fmt.Printf("ORIGINAL   CHECKSUM: %X\n", checksum)
-	fmt.Printf("CALCULATED CHECKSUM: %X\n", runningChecksumTotal)
+	fmt.Printf("ORIGINAL   CHECKSUM: 0x%4.4X\n", checksum)
+
+	upperBits := uint16(runningChecksumTotal >> 16)
+	lowerBits := uint16(runningChecksumTotal & 0x0000FFFF)
+	calcChecksum := upperBits + lowerBits
+
+	fmt.Printf("CALCULATED CHECKSUM: 0x%4.4X\n", calcChecksum)
 	// decryptedData[GAME] = Substructure{}
 	// decryptedData[ATTACKS] = Substructure{}
 	// decryptedData[EVCONDITION] = Substructure{}
@@ -105,7 +110,6 @@ func BytesToString(bytes uint64) (out string) {
 		letterASCII := lib.CharacterTable[y][x]
 		out = fmt.Sprintf("%s%s", out, letterASCII)
 	}
-	return
 }
 
 // func (p PokemonBytes) getSubstructureOrder()

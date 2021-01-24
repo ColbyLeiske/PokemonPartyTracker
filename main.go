@@ -12,8 +12,8 @@ import (
 )
 
 func main() {
-	trainerName := "COLB"
-	// trainerName := "AAAA" // BBBBBBBB 00FFBBBB
+	// trainerName := "COLB"
+	trainerName := "AAAA" // BBBBBBBB 00FFBBBB
 	// trainerName := "BCC6C9BD"
 
 	//Init
