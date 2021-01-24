@@ -3,15 +3,17 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
+	"time"
 
 	goxymemmory "github.com/Xustyx/goxymemory"
-	"github.com/colbyleiske/pokemonpartytracker/model"
+	"github.com/colbyleiske/pokemonpartytracker/pokemon"
 	"github.com/colbyleiske/pokemonpartytracker/util"
 )
 
 func main() {
 	// trainerName := "COLB"
-	trainerName := "AAAA" // BBBBBBBB 00FFBBBB
+	trainerName := "COLB" // BBBBBBBB 00FFBBBB
 	// trainerName := "BCC6C9BD"
 
 	//Init
@@ -26,34 +28,48 @@ func main() {
 		log.Println(err)
 	}
 	hTrainerName := fmt.Sprintf("%X", uTrainerName)
-	start := 0x00004500
-	var finalAddr uint
-	for i := 0x0; ; i += 0x00010000 {
-		currentAddress := start + i
-		data, err := dm.Read(uint(currentAddress), goxymemmory.UINT) //Reads the string.
-		if err != nil {                                              //Check if not failed.
-			fmt.Printf("Failed reading memory. %s", err)
+
+	c1 := make(chan uint, 1)
+	go func() {
+		start := 0x00004500
+		var finalAddr uint
+		for i := 0x0; ; i += 0x00010000 {
+			currentAddress := start + i
+			data, err := dm.Read(uint(currentAddress), goxymemmory.UINT) //Reads the string.
+			if err != nil {                                              //Check if not failed.
+				fmt.Printf("Failed reading memory. %s", err)
+			}
+			h := fmt.Sprintf("%X", data.Value)
+			if h == hTrainerName {
+				fmt.Printf("ADDRESS IS %X \n", currentAddress)
+				finalAddr = uint(currentAddress)
+				break
+			}
 		}
-		h := fmt.Sprintf("%X", data.Value)
-		if h == hTrainerName {
-			fmt.Printf("ADDRESS IS %X \n", currentAddress)
-			finalAddr = uint(currentAddress)
-			break
-		}
+		c1 <- finalAddr
+	}()
+
+	var addr uint
+	select {
+	case addr = <-c1:
+		break
+	case <-time.After(5 * time.Second):
+		log.Println("Timed out searching for pokemon party. Ensure the game is loaded and you have atleast ONE pokemon, then press Try Again.")
+		os.Exit(3)
 	}
 
 	var mask uint = 0x00004500
-	prefix := finalAddr ^ mask
+	prefix := addr ^ mask
 
 	var partyStart uint = 0x000044ec
 	startingSlot := prefix + partyStart
-
-	partySlots := make([]model.PokemonBytes, 6)
+	const sizeOfPokemon int = 100
+	partySlots := make([]pokemon.PokemonBytes, 6)
 
 	for p := 0; p < 6; p++ {
 		byteData := make([]byte, 100)
 		for i := 0; i < 100; i++ {
-			slot := startingSlot + uint(i*0x01) + uint(100*p)
+			slot := startingSlot + uint(i*0x01) + uint(sizeOfPokemon*p)
 
 			data, err := dm.Read(slot, goxymemmory.BYTE)
 			if err != nil { //Check if not failed.
@@ -62,7 +78,7 @@ func main() {
 
 			byteData[i] = data.Value.(byte)
 		}
-		partySlots[p] = model.CreatePokemonBytes(byteData)
+		partySlots[p] = pokemon.CreatePokemonBytes(byteData)
 	}
 
 	for _, v := range partySlots {
@@ -73,5 +89,4 @@ func main() {
 		fmt.Println(name)
 	}
 
-	
 }
