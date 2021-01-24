@@ -11,21 +11,26 @@ import (
 )
 
 //Assumes addr val (in hexadecimal) is even number
-func ConvertHexToString(hexVal string) (string, error) {
-	if len(strings.ReplaceAll(hexVal, "0", "")) == 0 {
+func ConvertHexToString(hexVal []byte) (string, error) {
+	hexStr := fmt.Sprintf("%X", hexVal)
+	if len(strings.ReplaceAll(hexStr, "0", "")) == 0 {
 		return "", errors.New("missing name data")
 	}
-	strLen := len(hexVal) / 2
+	strLen := len(hexStr) / 2
 	var convertedString string
 	for i := 0; i < strLen; i++ {
 		//mask byte by byte to get true value
-		character := hexVal[i*2 : (i*2)+2]
+		character := hexStr[i*2 : (i*2)+2]
 		x, y := ConvertByteToIndex(character)
 		convertedString = fmt.Sprintf("%v%s", convertedString, lib.CharacterTable[x][y])
 	}
 
 	return convertedString, nil
 }
+
+// func ConvertBytesToString(bytes uint64) (string, error){
+
+// }
 
 // uses little endian
 func ConvertStringToHex(val string) (uint64, error) {

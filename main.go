@@ -12,8 +12,8 @@ import (
 )
 
 func main() {
-	// trainerName := "COLB"
-	trainerName := "COLB" // BBBBBBBB 00FFBBBB
+	trainerName := "COLB"
+	// trainerName := "AAAA" // BBBBBBBB 00FFBBBB
 	// trainerName := "BCC6C9BD"
 
 	//Init
@@ -78,15 +78,21 @@ func main() {
 
 			byteData[i] = data.Value.(byte)
 		}
-		partySlots[p] = pokemon.CreatePokemonBytes(byteData)
+		pB, err := pokemon.CreatePokemonBytes(byteData)
+		if err != nil {
+			// log.Println(err)
+			continue
+		}
+		partySlots[p] = pB
 	}
 
 	for _, v := range partySlots {
-		name := v.GetNickname()
-		if name == "MISSING" {
+		if v.Nickname == "" {
 			continue
 		}
-		fmt.Println(name)
+		fmt.Println(v.Nickname)
+		fmt.Println(v.OriginalTrainerName)
+		// p, _ := v.GetPersonalityValue()
+		// fmt.Println(p % 24)
 	}
-
 }
