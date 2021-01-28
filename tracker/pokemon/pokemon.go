@@ -37,7 +37,7 @@ func CreatePokemonBytes(p []byte) (pokemon PokemonBytes, err error) {
 		OriginalTrainerID:   byteReader.Uint32(p[4:8]),
 		Nickname:            getNickname(byteReader.Uint64(p[8:16]), byteReader.Uint16(p[16:18])), //Little Endian for easier string parsing
 		Language:            p[18:20],
-		OriginalTrainerName: BytesToString((byteReader.Uint64(p[20:28]))),
+		OriginalTrainerName: BytesToString((byteReader.Uint64(p[20:28])), 7),
 		Markings:            p[27:28],
 		Checksum:            byteReader.Uint16(p[28:30]),
 		Unknowns:            p[30:32],
@@ -67,13 +67,3 @@ func CreatePokemonBytes(p []byte) (pokemon PokemonBytes, err error) {
 
 	return
 }
-
-// func (p *PokemonBytes) GetNickname() string {
-// 	nameData := fmt.Sprintf("%X", p.Nickname)
-// 	name, err := util.ConvertHexToString(nameData)
-// 	if err != nil {
-// 		// log.Printf("Failed to create nickname from bytes because %v\n", err)
-// 		return "MISSING"
-// 	}
-// 	return name
-// }

@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"github.com/colbyleiske/pokemonpartytracker/lib"
+	"github.com/colbyleiske/pokemonpartytracker/tracker/lib"
 )
 
 /*
@@ -60,33 +60,32 @@ var Orders = []SubstructureOrder{
 }
 
 func (p PokemonBytes) getDecryptionKey() uint32 {
-	return uint32(p.OriginalTrainerID) ^ p.Personality
+	return p.OriginalTrainerID ^ p.Personality
 }
 
 func getNickname(nickIntOne uint64, nickIntTwo uint16) string {
-	return BytesToString(nickIntOne) + BytesToString(uint64(nickIntTwo))
+	return BytesToString(nickIntOne, 8) + BytesToString(uint64(nickIntTwo), 2)
 }
 
 //https://bulbapedia.bulbagarden.net/wiki/Pok%C3%A9mon_data_substructures_in_Generation_III
 func decryptData(encryptedData []byte, decryptionKey uint32, personalityValue uint32, checksum uint16) (decryptedData DecryptedData, err error) {
 	//determine order of substructures
 	// order := Orders[personalityValue%24]
-
-	var runningChecksumTotal uint32
+	var total uint32
 	for i := 0; i < 48; i += 4 {
-		// encrytpedSubStructure := encryptedData[i*12 : (i+1)*12]
-		encrytpedSubStructure := binary.LittleEndian.Uint32(encryptedData[i:(i + 4)])
-		decryptedSubStructure := encrytpedSubStructure ^ decryptionKey
+		substructure := binary.LittleEndian.Uint32(encryptedData[i:(i + 4)])
+		substructure ^= decryptionKey
 
-		runningChecksumTotal += decryptedSubStructure
+		total += substructure
 	}
+
+	fmt.Printf("TOTAL:             : 0x%8.8X\n", total)
 	fmt.Printf("ORIGINAL   CHECKSUM: 0x%4.4X\n", checksum)
 
-	upperBits := uint16(runningChecksumTotal >> 16)
-	lowerBits := uint16(runningChecksumTotal & 0x0000FFFF)
-	calcChecksum := upperBits + lowerBits
+	calcChecksum := total + (total >> 16)
 
-	fmt.Printf("CALCULATED CHECKSUM: 0x%4.4X\n", calcChecksum)
+	fmt.Printf("CALCULATED CHECKSUM: 0x%4.4X\n", uint16(calcChecksum))
+
 	// decryptedData[GAME] = Substructure{}
 	// decryptedData[ATTACKS] = Substructure{}
 	// decryptedData[EVCONDITION] = Substructure{}
@@ -98,18 +97,16 @@ func (p PokemonBytes) IsChecksumValid() (bool, error) {
 	return false, nil
 }
 
-func BytesToString(bytes uint64) (out string) {
-	for i := 0; ; i++ {
+func BytesToString(bytes uint64, length int) (out string) {
+	for i := 0; i < length; i++ {
 		shiftedBytes := bytes >> (8 * i)
 		letter := shiftedBytes & 0xFF
-		if letter == 0 {
-			return
-		}
-		y := (letter & 0xF0) >> 4
-		x := (letter & 0x0F)
+		y := letter >> 4
+		x := letter & 0x0F
 		letterASCII := lib.CharacterTable[y][x]
 		out = fmt.Sprintf("%s%s", out, letterASCII)
 	}
+	return
 }
 
 // func (p PokemonBytes) getSubstructureOrder()
